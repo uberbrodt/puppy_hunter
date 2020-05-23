@@ -10,10 +10,21 @@ class PuppyCrawler(scrapy.Spider):
 
     def parse(self, response):
         for puppy in response.css("td.list-item"):
-            yield {
+            pupper_link = puppy.css("div.list-animal-name>a::attr('href')").get()
+
+            pupperino = {
                 "id": puppy.css("div.list-animal-id::text").get(),
                 "name": puppy.css("div.list-animal-name>a::text").get(),
-                "detail_link": puppy.css("div.list-animal-name>a::attr('href')").get(),
+                "detail_link": pupper_link,
                 "sex": puppy.css("div.list-animal-sexSN::text").get(),
                 "breed": puppy.css("div.list-animal-breed::text").get(),
             }
+            yield response.follow(
+                pupper_link, self.pupper_info, meta={"pupperino": pupperino}
+            )
+
+    def pupper_info(self, response):
+        pupperino = response.meta["pupperino"]
+        pupperino["size"] = response.css("span#lblSize::text").get()
+        pupperino["stage"] = response.css("span#lblStage::text").get()
+        yield pupperino
