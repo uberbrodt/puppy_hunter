@@ -28,12 +28,19 @@ def cli():
 @click.command()
 @click.option("--dbpath", default=DEFAULT_DB_PATH, show_default=True)
 @click.option("--tempdir", default=DEFAULT_TEMP_DIR, show_default=True)
-def run(dbpath, tempdir):
-    ut = int(time.time())
+@click.option("--batch_time", default=None, show_default=True)
+def run(dbpath, tempdir, batch_time):
+    if batch_time is None:
+        ut = int(time.time())
+    else:
+        ut = int(batch_time)
+
     puppy_file = f"{tempdir}/puppies_{ut}.json"
-    process = CrawlerProcess(settings={"FEEDS": {puppy_file: {"format": "json"}}})
-    process.crawl(PuppyCrawler)
-    process.start()
+
+    if batch_time is None:
+        process = CrawlerProcess(settings={"FEEDS": {puppy_file: {"format": "json"}}})
+        process.crawl(PuppyCrawler)
+        process.start()
 
     puppy_hunter.db.update_batch(dbpath, puppy_file)
     puppy_hunter.notify.updated_puppies_since(ut, dbpath)
