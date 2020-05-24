@@ -1,15 +1,13 @@
 ============
 puppy_hunter
 ============
+.. image:: https://upload.wikimedia.org/wikipedia/en/6/66/Hunter_title_screen.jpg
 
 
-Add a short description here!
-
+Webscraper to notify via email and SMS if there are new puppies on a website
 
 Description
 ===========
-
-A longer description of your project goes here...
 
 
 Note
