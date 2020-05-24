@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from pkg_resources import get_distribution, DistributionNotFound
 import click
+import time
+import puppy_hunter.db
 from puppy_hunter.crawl import PuppyCrawler
 from scrapy.crawler import CrawlerProcess
 
@@ -14,8 +16,28 @@ finally:
     del get_distribution, DistributionNotFound
 
 
+@click.group()
+def cli():
+    pass
+
+
 @click.command()
 def run():
-    process = CrawlerProcess(settings={"FEEDS": {"puppies.json": {"format": "json"}}})
+    ut = int(time.time())
+    puppy_file = f"files/puppies_{ut}.json"
+    puppy_db = "files/puppy_db.sqlite"
+    process = CrawlerProcess(settings={"FEEDS": {puppy_file: {"format": "json"}}})
     process.crawl(PuppyCrawler)
     process.start()
+
+    puppy_hunter.db.update_batch(puppy_db, puppy_file)
+
+
+@click.command()
+def initialize():
+    puppy_db = "puppy_db.sqlite"
+    puppy_hunter.db.initialize_db(puppy_db)
+
+
+cli.add_command(run)
+cli.add_command(initialize)
