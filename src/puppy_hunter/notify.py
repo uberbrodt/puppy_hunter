@@ -3,6 +3,7 @@ import puppy_hunter.db
 import os
 from email.message import EmailMessage
 from datetime import datetime
+from twilio.rest import Client
 
 """
 Send out updated puppies since unix time
@@ -47,5 +48,21 @@ def updated_puppies_since(time, db_name):
         smtp.starttls()
         smtp.login(smtp_user, smtp_passwd)
         smtp.send_message(msg, to_addrs=sendto)
+        send_twilio_notification()
 
 
+def send_twilio_notification():
+    account_sid = os.environ.get("PUPPYHUNTER_TWILIO_SID")
+    auth_token = os.environ.get("PUPPYHUNTER_TWILIO_AUTH")
+    smsto = os.environ.get("PUPPYHUNTER_SMSTO").split(",")
+    smsfrom = os.environ.get("PUPPYHUNTER_SMSFROM")
+    client = Client(account_sid, auth_token)
+
+    for phone_num in smsto:
+        client.messages.create(
+            body="You have a PUPdate from PuppyHunter! Check your email",
+            to=phone_num,
+            from_=smsfrom,
+        )
+
+    print("Sent SMS messages")
