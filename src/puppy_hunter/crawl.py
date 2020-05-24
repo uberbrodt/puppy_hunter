@@ -15,7 +15,7 @@ class PuppyCrawler(scrapy.Spider):
             pupperino = {
                 "id": puppy.css("div.list-animal-id::text").get(),
                 "name": puppy.css("div.list-animal-name>a::text").get(),
-                "detail_link": pupper_link,
+                "detail_link": response.urljoin(pupper_link),
                 "sex": puppy.css("div.list-animal-sexSN::text").get(),
                 "breed": puppy.css("div.list-animal-breed::text").get(),
             }

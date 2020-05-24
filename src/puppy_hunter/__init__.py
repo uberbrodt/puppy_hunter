@@ -3,6 +3,7 @@ from pkg_resources import get_distribution, DistributionNotFound
 import click
 import time
 import puppy_hunter.db
+import puppy_hunter.notify
 from puppy_hunter.crawl import PuppyCrawler
 from scrapy.crawler import CrawlerProcess
 
@@ -31,11 +32,12 @@ def run():
     process.start()
 
     puppy_hunter.db.update_batch(puppy_db, puppy_file)
+    puppy_hunter.notify.updated_puppies_since(ut, puppy_db)
 
 
 @click.command()
 def initialize():
-    puppy_db = "puppy_db.sqlite"
+    puppy_db = "files/puppy_db.sqlite"
     puppy_hunter.db.initialize_db(puppy_db)
 
 

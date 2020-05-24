@@ -11,6 +11,15 @@ def initialize_db(db_name):
     conn.close()
 
 
+def get_updated_since(db_name, time):
+    conn = sqlite3.connect(db_name)
+    conn.row_factory = sqlite3.Row
+    puppies = conn.execute(
+        "select * from puppies WHERE updated_at >= :updated_at", {"updated_at": time}
+    )
+    return puppies
+
+
 def update_batch(db_name, puppy_filename):
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
