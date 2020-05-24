@@ -16,6 +16,9 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
+DEFAULT_DB_PATH = "files/puppy_db.sqlite"
+DEFAULT_TEMP_DIR = "files"
+
 
 @click.group()
 def cli():
@@ -23,22 +26,23 @@ def cli():
 
 
 @click.command()
-def run():
+@click.option("--dbpath", default=DEFAULT_DB_PATH, show_default=True)
+@click.option("--tempdir", default=DEFAULT_TEMP_DIR, show_default=True)
+def run(dbpath, tempdir):
     ut = int(time.time())
-    puppy_file = f"files/puppies_{ut}.json"
-    puppy_db = "files/puppy_db.sqlite"
+    puppy_file = f"{tempdir}/puppies_{ut}.json"
     process = CrawlerProcess(settings={"FEEDS": {puppy_file: {"format": "json"}}})
     process.crawl(PuppyCrawler)
     process.start()
 
-    puppy_hunter.db.update_batch(puppy_db, puppy_file)
-    puppy_hunter.notify.updated_puppies_since(ut, puppy_db)
+    puppy_hunter.db.update_batch(dbpath, puppy_file)
+    puppy_hunter.notify.updated_puppies_since(ut, dbpath)
 
 
 @click.command()
-def initialize():
-    puppy_db = "files/puppy_db.sqlite"
-    puppy_hunter.db.initialize_db(puppy_db)
+@click.option("--dbpath", default=DEFAULT_DB_PATH, show_default=True)
+def initialize(dbpath):
+    puppy_hunter.db.initialize_db(dbpath)
 
 
 cli.add_command(run)
