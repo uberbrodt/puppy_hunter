@@ -1,5 +1,6 @@
 import smtplib
 import puppy_hunter.db
+import puppy_hunter.log
 import os
 from email.message import EmailMessage
 from datetime import datetime
@@ -9,11 +10,13 @@ from twilio.rest import Client
 Send out updated puppies since unix time
 """
 
+logger = puppy_hunter.log.get_logger()
 
-def updated_puppies_since(time, db_name):
+
+def send_updated_notifications(db_name):
     now = datetime.now()
     now_s = now.strftime("%b-%d %H:%M")
-    puppies = puppy_hunter.db.get_updated_since(db_name, time)
+    puppies = puppy_hunter.db.get_unnotified_puppies(db_name)
 
     smtp_user = os.environ.get("PUPPYHUNTER_SMTP_USER")
     smtp_passwd = os.environ.get("PUPPYHUNTER_SMTP_PASSWD")
@@ -22,6 +25,8 @@ def updated_puppies_since(time, db_name):
 
     msg_content = ""
 
+    puppy_cnt = 0
+    puppy_ids = []
     for pupper in puppies:
 
         msg_content += f"""
@@ -36,8 +41,12 @@ def updated_puppies_since(time, db_name):
         updated_at: {pupper['updated_at']}
         -------------------------------------------
         """
+        puppy_cnt += 1
+        puppy_ids.append(pupper["id"])
+
+    logger.info(f"found {puppy_cnt} to be sent in notifications")
     if msg_content != "":
-        print("Got PUPdates! Sending notifications")
+        logger.info(f"Got PUPdates! Sending notifications to {sendto}")
         msg = EmailMessage()
         msg.set_content(msg_content)
 
@@ -49,6 +58,9 @@ def updated_puppies_since(time, db_name):
         smtp.login(smtp_user, smtp_passwd)
         smtp.send_message(msg, to_addrs=sendto)
         send_twilio_notification()
+
+    puppy_hunter.db.mark_puppies_notified(db_name, puppy_ids)
+    puppies.close()
 
 
 def send_twilio_notification():
@@ -65,4 +77,4 @@ def send_twilio_notification():
             from_=smsfrom,
         )
 
-    print("Sent SMS messages")
+    logger.info(f"Sent SMS messages to {smsto}")

@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
-from pkg_resources import get_distribution, DistributionNotFound
-import click
+import os.path
 import time
+import logging
+
+import click
+from pkg_resources import DistributionNotFound, get_distribution
+from scrapy.crawler import CrawlerProcess
+
 import puppy_hunter.db
+import puppy_hunter.log as log
 import puppy_hunter.notify
 from puppy_hunter.crawl import PuppyCrawler
-from scrapy.crawler import CrawlerProcess
 
 try:
     # Change here if project is renamed and does not equal the package name
@@ -18,6 +23,8 @@ finally:
 
 DEFAULT_DB_PATH = "files/puppy_db.sqlite"
 DEFAULT_TEMP_DIR = "files"
+DEFAULT_LOG_PATH = "logs"
+DEFAULT_CONFIG_PATH = "config"
 
 
 @click.group()
@@ -29,21 +36,35 @@ def cli():
 @click.option("--dbpath", default=DEFAULT_DB_PATH, show_default=True)
 @click.option("--tempdir", default=DEFAULT_TEMP_DIR, show_default=True)
 @click.option("--batch_time", default=None, show_default=True)
-def run(dbpath, tempdir, batch_time):
+@click.option("--log_path", default=DEFAULT_LOG_PATH, show_default=True)
+@click.option("--config_path", default=DEFAULT_CONFIG_PATH, show_default=True)
+def run(dbpath, tempdir, batch_time, log_path, config_path):
+    log.configure_logging(config_path)
+    logger = log.get_logger()
+    logger.info("Starting PuppyHunter run")
     if batch_time is None:
         ut = int(time.time())
     else:
         ut = int(batch_time)
 
+    logger.info(f"batch_time is {ut}")
+
     puppy_file = f"{tempdir}/puppies_{ut}.json"
 
     if batch_time is None:
-        process = CrawlerProcess(settings={"FEEDS": {puppy_file: {"format": "json"}}})
+        process = CrawlerProcess(
+            settings={
+                "LOG_FILE": os.path.join(log_path, "scrapy.log"),
+                "LOG_LEVEL": logging.INFO,
+                "LOG_ENABLED": False,
+                "FEEDS": {puppy_file: {"format": "json"}},
+            }
+        )
         process.crawl(PuppyCrawler)
         process.start()
 
     puppy_hunter.db.update_batch(dbpath, puppy_file)
-    puppy_hunter.notify.updated_puppies_since(ut, dbpath)
+    puppy_hunter.notify.send_updated_notifications(dbpath)
 
 
 @click.command()

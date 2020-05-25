@@ -19,9 +19,10 @@ class PuppyCrawler(scrapy.Spider):
                 "sex": puppy.css("div.list-animal-sexSN::text").get(),
                 "breed": puppy.css("div.list-animal-breed::text").get(),
             }
-            yield response.follow(
-                pupper_link, self.pupper_info, meta={"pupperino": pupperino}
-            )
+            if pupper_link is not None:
+                yield response.follow(
+                    pupper_link, self.pupper_info, meta={"pupperino": pupperino}
+                )
 
     def pupper_info(self, response):
         pupperino = response.meta["pupperino"]
